@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="org.example.cargame.HelloController"
+            prefWidth="820" prefHeight="400"
+            style="-fx-background-color: #f4f4f4;" focusTraversable="true">
+
+  <!-- ===================== ВЕРХНЯЯ ПАНЕЛЬ ===================== -->
+  <top>
+    <VBox spacing="8">
+      <padding>
+        <Insets top="12" right="12" bottom="8" left="12"/>
+      </padding>
+
+      <!-- Строка 1: выбор порта и подключение -->
+      <HBox spacing="8" alignment="CENTER_LEFT">
+        <Label text="COM-порт:"
+               style="-fx-font-weight: bold;"/>
+
+        <ComboBox fx:id="portCombo"
+                  prefWidth="220"
+                  promptText="Выберите порт"/>
+
+        <Button fx:id="refreshBtn"
+                text="Обновить"
+                onAction="#refreshPorts"
+                prefWidth="100"/>
+
+        <Button fx:id="connectBtn"
+                text="Подключиться"
+                onAction="#toggleConnection"
+                prefWidth="150"
+                style="-fx-background-color: #4caf50; -fx-text-fill: white; -fx-font-weight: bold;"/>
+
+        <Separator orientation="VERTICAL"/>
+
+        <Label text="Статус:"
+               style="-fx-font-weight: bold;"/>
+
+        <Label fx:id="statusLabel"
+               text="Не подключено"
+               style="-fx-text-fill: #666;"/>
+      </HBox>
+
+      <!-- Строка 2: телеметрия (значения с Arduino) -->
+      <HBox spacing="20" alignment="CENTER_LEFT">
+        <Label fx:id="steerLabel"
+               text="Руль: —"
+               style="-fx-text-fill: #333;"/>
+
+        <Label fx:id="forwardLabel"
+               text="Газ: —"
+               style="-fx-text-fill: #333;"/>
+
+        <Label fx:id="backwardLabel"
+               text="Тормоз/назад: —"
+               style="-fx-text-fill: #333;"/>
+
+        <Label fx:id="fpsLabel"
+               text="FPS: —"
+               style="-fx-text-fill: #888;"/>
+      </HBox>
+    </VBox>
+  </top>
+
+  <!-- ===================== ИГРОВОЕ ПОЛЕ ===================== -->
+  <center>
+    <StackPane fx:id="gamePane"
+               style="-fx-background-color: #1e1e1e;">
+      <padding>
+        <Insets top="8" right="12" bottom="12" left="12"/>
+      </padding>
+
+      <Canvas fx:id="gameCanvas"
+              width="800" height="500"/>
+    </StackPane>
+  </center>
+
+</BorderPane>
