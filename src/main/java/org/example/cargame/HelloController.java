@@ -16,6 +16,7 @@ public class HelloController {
     @FXML private Button refreshBtn;
     @FXML private Label statusLabel;
     @FXML private Canvas gameCanvas;
+    @FXML private StackPane gamePane;
 
     private final CarState carState = new CarState();
     private SerialReader serial;
@@ -26,13 +27,14 @@ public class HelloController {
                 Platform.runLater(() -> statusLabel.setText(msg)));
 
         refreshPorts();
-        //connectBtn.setOnAction(e -> toggleConnection());
+        returnFocusToGame();
     }
 
     @FXML
     private void refreshPorts() {
         portCombo.getItems().setAll(SerialReader.getAvailablePorts());
         if (!portCombo.getItems().isEmpty()) portCombo.getSelectionModel().selectFirst();
+        returnFocusToGame();
     }
 
     @FXML
@@ -48,8 +50,10 @@ public class HelloController {
             }
             if (serial.connect(port)) {
                 connectBtn.setText("Отключиться");
+                carState.set(512, 0, 0);
             }
         }
+        returnFocusToGame();
     }
 
     private boolean serialConnected() {
@@ -69,4 +73,12 @@ public class HelloController {
         if (serial != null) serial.sendEvent(code);
     }
     public Canvas getGameCanvas() { return gameCanvas; }
+
+    public void returnFocusToGame() {
+        gamePane.requestFocus();
+    }
+
+    public boolean isSerialConnected() {
+        return serial != null && serial.isConnected();
+    }
 }

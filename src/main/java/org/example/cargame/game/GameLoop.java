@@ -27,13 +27,13 @@ public class GameLoop extends AnimationTimer {
     private long flashUntil    = 0;
 
     //Настройки автомобиля
+    private static final double MAX_SPEED_FWD = 300.0;   // макс. скорость вперёд, px/с
+    private static final double MAX_SPEED_BWD = 120.0;   // макс. скорость назад
+    private static final double ACCEL         = 200.0;   // ускорение, px/с²
+    private static final double BRAKE         = 450.0;   // торможение
+    private static final double FRICTION      = 120.0;   // трение
+    private static final double TURN_FACTOR   = 4.0;     // скорость поворота
     private static final double MAX_STEER_ANGLE = 30.0;
-    private static final double MAX_SPEED_FWD = 300.0;
-    private static final double MAX_SPEED_BWD = 120.0;
-    private static final double ACCEL = 200.0;
-    private static final double BRAKE = 450.0;
-    private static final double FRICTION = 120.0;
-    private static final double TURN_FACTOR = 4.0;
     private static final double CAR_W = 26;
     private static final double CAR_H = 46;
 
@@ -83,6 +83,9 @@ public class GameLoop extends AnimationTimer {
         if (now < stunnedUntil) {
             speed *= 0.9;
         } else {
+            long nowNs = System.nanoTime();
+            System.out.println("stunned=" + (nowNs < stunnedUntil)
+                    + " stun_left_ms=" + ((stunnedUntil - nowNs) / 1_000_000));
             if (forward == 1) {
                 speed += ACCEL * dt;
                 if (speed > MAX_SPEED_FWD) speed = MAX_SPEED_FWD;
@@ -104,9 +107,12 @@ public class GameLoop extends AnimationTimer {
                 }
             }
 
-            double wheelAngle = (steer - 512) / 512.0 * MAX_STEER_ANGLE;
+            double center = (steer > 1023) ? 2048.0 : 512.0;
+            double range  = (steer > 1023) ? 2048.0 : 512.0;
+            double wheelAngle = (steer - center) / range * MAX_STEER_ANGLE;
+
             if (Math.abs(speed) > 1) {
-                double speedFactor = speed / MAX_SPEED_FWD; // отриц. при заднем ходе
+                double speedFactor = speed / MAX_SPEED_FWD;
                 angle += wheelAngle * speedFactor * TURN_FACTOR * dt;
             }
         }
@@ -126,9 +132,12 @@ public class GameLoop extends AnimationTimer {
         if (x > rightLimit) { x = rightLimit; hitCurb = true; }
 
         if (hitCurb) {
-            speed *= 0.7;
-            if (Math.abs(speed) < 5) speed = 0;
+            speed *= 0.98;
+            if (Math.abs(speed) < 1) speed = 0;
         }
+        System.out.println("x=" + x
+                + " left=" + leftLimit + " right=" + rightLimit
+                + " hitCurb=" + hitCurb);
 
         Iterator<Coin> ci = coins.iterator();
         while (ci.hasNext()) {

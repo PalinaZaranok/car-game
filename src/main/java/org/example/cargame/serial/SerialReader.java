@@ -42,6 +42,8 @@ public class SerialReader {
             status.accept("Не удалось открыть " + portName);
             return false;
         }
+        port.setDTR();  
+        port.setRTS();
 
         isRunning = true;
         readThread = new Thread(this::readLoop, "SerialReader");
@@ -62,29 +64,39 @@ public class SerialReader {
     }
 
     private void readLoop() {
-        try (InputStream in = port.getInputStream()) {
-            StringBuilder buffer = new StringBuilder();
-            byte[] chunk = new byte[128];
+        StringBuilder buffer = new StringBuilder();
+        byte[] chunk = new byte[128];
 
+        try (InputStream in = port.getInputStream()) {
             while (isRunning) {
-                int n = in.read(chunk);
-                if (n < 0) {
-                    if (!isRunning) break;
-                    continue;
-                }
-                for (int i = 0; i < n; i++) {
-                    char c = (char) chunk[i];
-                    if (c == '\n') {
-                        parseLine(buffer.toString());
-                        buffer.setLength(0);
-                    } else if (c != '\r') {
-                        buffer.append(c);
+                try {
+                    int n = in.read(chunk);
+                    if (n < 0) {
+                        if (!isRunning) break;
+                        continue;
                     }
+                    for (int i = 0; i < n; i++) {
+                        char c = (char) chunk[i];
+                        if (c == '\n') {
+                            parseLine(buffer.toString());
+                            buffer.setLength(0);
+                        } else if (c != '\r') {
+                            buffer.append(c);
+                        }
+                    }
+                } catch (com.fazecast.jSerialComm.SerialPortTimeoutException e) {
+                    // Таймаут — это нормально, если данных нет. Просто идем на следующую итерацию цикла.
+                } catch (IOException e) {
+                    if (isRunning) {
+                        status.accept("Ошибка чтения: " + e.getMessage());
+                    }
+                    break; // Выходим из цикла while при реальной ошибке (например, выдернули USB)
                 }
             }
         } catch (IOException e) {
+            // Ошибка при попытке получить InputStream (например, порт уже закрыт)
             if (isRunning) {
-                status.accept("Ошибка чтения: " + e.getMessage());
+                status.accept("Ошибка потока: " + e.getMessage());
             }
         } finally {
             isRunning = false;
@@ -94,7 +106,9 @@ public class SerialReader {
 
     /** Ожидает строку "S<num>,F<0|1>,B<0|1>"; некорректные — игнорирует. */
     private void parseLine(String line) {
+        System.out.println("DEBUG LINE: [" + line + "]");
         if (line.isEmpty() || line.charAt(0) != 'S') return;
+
 
         int fIdx = line.indexOf(",F");
         int bIdx = line.indexOf(",B");
@@ -105,11 +119,15 @@ public class SerialReader {
             int forward  = Integer.parseInt(line.substring(fIdx + 2, bIdx).trim());
             int backward = Integer.parseInt(line.substring(bIdx + 2).trim());
 
-            if (steer < 0 || steer > 1023) return;
+            if (steer < 0 || steer > 4095) return;
             if (forward != 0 && forward != 1) return;
             if (backward != 0 && backward != 1) return;
 
+            if (steer > 1023) {
+                steer = steer * 1023 / 4095;
+            }
             carState.set(steer, forward, backward);
+            System.out.println("RAW: " + line);
         } catch (NumberFormatException ignored) {
 
         }
@@ -122,5 +140,9 @@ public class SerialReader {
             port.getOutputStream().write((code + "\n").getBytes());
             port.getOutputStream().flush();
         } catch (IOException ignored) { }
+    }
+
+    public boolean isConnected() {
+        return isRunning;
     }
 }

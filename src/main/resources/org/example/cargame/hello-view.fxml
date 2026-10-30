@@ -32,17 +32,20 @@
 
         <ComboBox fx:id="portCombo"
                   prefWidth="220"
-                  promptText="Выберите порт"/>
+                  promptText="Выберите порт"
+                  focusTraversable="false"/>
 
         <Button fx:id="refreshBtn"
                 text="Обновить"
                 onAction="#refreshPorts"
-                prefWidth="100"/>
+                prefWidth="100"
+                focusTraversable="false"/>
 
         <Button fx:id="connectBtn"
                 text="Подключиться"
                 onAction="#toggleConnection"
                 prefWidth="150"
+                focusTraversable="false"
                 style="-fx-background-color: #4caf50; -fx-text-fill: white; -fx-font-weight: bold;"/>
 
         <Separator orientation="VERTICAL"/>

@@ -32,7 +32,7 @@ public class HelloApplication extends Application {
 
         Scene scene = new Scene(root);
         // управление с клавиатуры
-        new KeyboardStub(controller.getCarState(), scene);
+        new KeyboardStub(controller.getCarState(), scene, () -> controller.isSerialConnected());
 
         stage.setTitle("Car game");
         stage.setScene(scene);
