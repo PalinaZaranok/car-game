@@ -7,4 +7,7 @@ module org.example.cargame {
 
     opens org.example.cargame to javafx.fxml;
     exports org.example.cargame;
+
+    opens org.example.cargame.state;
+    exports org.example.cargame.state;
 }

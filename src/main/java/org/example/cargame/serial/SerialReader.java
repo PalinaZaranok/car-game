@@ -22,26 +22,29 @@ public class SerialReader {
         this.status = status;
     }
 
-    /** Список системных имён доступных COM-портов. */
     public static List<String> getAvailablePorts() {
         List<String> names = new ArrayList<>();
+
         for (SerialPort p : SerialPort.getCommPorts()) {
             names.add(p.getSystemPortName());
         }
+
         return names;
     }
 
-    public boolean connect(String portName){
+    public boolean connect(String portName) {
         if (isRunning) return false;
 
         port = SerialPort.getCommPort(portName);
         port.setComPortParameters(115200, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
-        port.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 100, 0);
+        port.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 20, 0);
 
         if (!port.openPort()) {
             status.accept("Не удалось открыть " + portName);
             return false;
         }
+
+        port.flushIOBuffers();
 
         isRunning = true;
         readThread = new Thread(this::readLoop, "SerialReader");
@@ -52,28 +55,34 @@ public class SerialReader {
         return true;
     }
 
-    public void disconnect(){
+    public void disconnect() {
         isRunning = false;
-        if (port != null && port.isOpen()){
+
+        if (port != null && port.isOpen()) {
             port.closePort();
         }
+
         readThread = null;
+        carState.resetHardware();
         status.accept("Отключено");
     }
 
     private void readLoop() {
         try (InputStream in = port.getInputStream()) {
             StringBuilder buffer = new StringBuilder();
-            byte[] chunk = new byte[128];
+            byte[] chunk = new byte[256];
 
             while (isRunning) {
                 int n = in.read(chunk);
+
                 if (n < 0) {
                     if (!isRunning) break;
                     continue;
                 }
+
                 for (int i = 0; i < n; i++) {
                     char c = (char) chunk[i];
+
                     if (c == '\n') {
                         parseLine(buffer.toString());
                         buffer.setLength(0);
@@ -88,11 +97,13 @@ public class SerialReader {
             }
         } finally {
             isRunning = false;
-            if (port != null && port.isOpen()) port.closePort();
+            carState.resetHardware();
+            if (port != null && port.isOpen()) {
+                port.closePort();
+            }
         }
     }
 
-    /** Ожидает строку "S<num>,F<0|1>,B<0|1>"; некорректные — игнорирует. */
     private void parseLine(String line) {
         if (line.isEmpty() || line.charAt(0) != 'S') return;
 
@@ -109,13 +120,11 @@ public class SerialReader {
             if (forward != 0 && forward != 1) return;
             if (backward != 0 && backward != 1) return;
 
-            carState.set(steer, forward, backward);
+            carState.setHardware(steer, forward, backward, line.trim());
         } catch (NumberFormatException ignored) {
-
         }
     }
 
-    // отправка событий
     public void sendEvent(char code) {
         if (port == null || !port.isOpen()) return;
         try {

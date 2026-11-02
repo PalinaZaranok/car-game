@@ -26,7 +26,6 @@ public class GameLoop extends AnimationTimer {
     private long stunnedUntil  = 0;
     private long flashUntil    = 0;
 
-    //Настройки автомобиля
     private static final double MAX_STEER_ANGLE = 30.0;
     private static final double MAX_SPEED_FWD = 300.0;
     private static final double MAX_SPEED_BWD = 120.0;
@@ -61,6 +60,7 @@ public class GameLoop extends AnimationTimer {
             lastTime = now;
             nextCoinSpawn = now;
             nextPedSpawn  = now + 2_000_000_000L;
+
             return;
         }
 
@@ -80,6 +80,7 @@ public class GameLoop extends AnimationTimer {
         int backward = state.getBackward();
 
         long now = System.nanoTime();
+
         if (now < stunnedUntil) {
             speed *= 0.9;
         } else {
@@ -106,7 +107,7 @@ public class GameLoop extends AnimationTimer {
 
             double wheelAngle = (steer - 512) / 512.0 * MAX_STEER_ANGLE;
             if (Math.abs(speed) > 1) {
-                double speedFactor = speed / MAX_SPEED_FWD; // отриц. при заднем ходе
+                double speedFactor = speed / MAX_SPEED_FWD;
                 angle += wheelAngle * speedFactor * TURN_FACTOR * dt;
             }
         }
@@ -131,6 +132,7 @@ public class GameLoop extends AnimationTimer {
         }
 
         Iterator<Coin> ci = coins.iterator();
+
         while (ci.hasNext()) {
             Coin c = ci.next();
             if (carHitsCircle(c.x, c.y, c.radius)) {
@@ -141,8 +143,10 @@ public class GameLoop extends AnimationTimer {
         }
 
         Iterator<Person> pi = pedestrians.iterator();
+
         while (pi.hasNext()) {
             Person p = pi.next();
+
             if (carHitsCircle(p.x, p.y, Math.max(p.w, p.h) / 2)) {
                 pi.remove();
                 collisions++;
@@ -180,14 +184,12 @@ public class GameLoop extends AnimationTimer {
         g.setLineWidth(2);
         g.setLineDashes(20, 20);
         g.strokeLine(w / 2, 0, w / 2, h);
-        g.setLineDashes(null);
+        g.setLineDashes((double[]) null);
 
         drawCoins(g);
         drawPerson(g);
         drawCar(g);
         drawHud(g);
-
-        drawCar(g);
     }
 
     private void drawCar(GraphicsContext g) {
@@ -224,6 +226,7 @@ public class GameLoop extends AnimationTimer {
             spawnCoin();
             nextCoinSpawn = now + 1_500_000_000L;
         }
+
         if (now > nextPedSpawn && pedestrians.size() < 3) {
             spawnPedestrian();
             nextPedSpawn = now + 3_000_000_000L;
@@ -238,7 +241,8 @@ public class GameLoop extends AnimationTimer {
         for (int tries = 0; tries < 10; tries++) {
             double cx = left + rng.nextDouble() * (right - left);
             double cy = 60 + rng.nextDouble() * (canvas.getHeight() - 120);
-            if (Math.hypot(cx - x, cy - y) > 100) {     // не прямо под машиной
+
+            if (Math.hypot(cx - x, cy - y) > 100) {
                 coins.add(new Coin(cx, cy));
                 return;
             }
@@ -253,6 +257,7 @@ public class GameLoop extends AnimationTimer {
         for (int tries = 0; tries < 10; tries++) {
             double px = left + rng.nextDouble() * (right - left);
             double py = 60 + rng.nextDouble() * (canvas.getHeight() - 120);
+
             if (Math.hypot(px - x, py - y) > 150) {
                 pedestrians.add(new Person(px, py));
                 return;
@@ -285,7 +290,6 @@ public class GameLoop extends AnimationTimer {
 
     private void drawPerson(GraphicsContext g) {
         for (Person p : pedestrians) {
-
             g.setFill(Color.web("#f4a261"));
             g.fillRoundRect(p.x - p.w / 2, p.y - p.h / 2, p.w, p.h, 4, 4);
 
@@ -305,7 +309,8 @@ public class GameLoop extends AnimationTimer {
         g.fillText("Столкновений: " + collisions, 12, 48);
 
         if (System.nanoTime() < flashUntil) {
-
+            g.setFill(Color.rgb(255, 0, 0, 0.35));
+            g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
         }
     }
 }

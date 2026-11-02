@@ -1,49 +1,61 @@
 package org.example.cargame.game;
 
-
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import org.example.cargame.state.CarState;
 
-/**
- * Временная заглушка для управления машиной с клавиатуры.
- * Используется, пока Arduino не подключена или для отладки физики.
- *
- *   ← / →  — руль (шаг 100, диапазон 0..1023, 512 = прямо)
- *   ↑      — газ (пока удерживается)
- *   ↓      — тормоз / задний ход (пока удерживается)
- */
 public class KeyboardStub {
-
-    private static final int STEER_STEP = 100;
-
     private final CarState state;
-    private int steer = 512;
-    private int forward = 0;
-    private int backward = 0;
+
+    private boolean leftPressed = false;
+    private boolean rightPressed = false;
+    private boolean upPressed = false;
+    private boolean downPressed = false;
 
     public KeyboardStub(CarState state, Scene scene) {
         this.state = state;
 
         scene.setOnKeyPressed(e -> {
             KeyCode code = e.getCode();
+
             switch (code) {
-                case LEFT  -> steer = Math.max(0,    steer - STEER_STEP);
-                case RIGHT -> steer = Math.min(1023, steer + STEER_STEP);
-                case UP    -> forward = 1;
-                case DOWN  -> backward = 1;
+                case LEFT  -> leftPressed = true;
+                case RIGHT -> rightPressed = true;
+                case UP    -> upPressed = true;
+                case DOWN  -> downPressed = true;
                 default    -> { return; }
             }
-            state.set(steer, forward, backward);
+
+            updateState();
         });
 
         scene.setOnKeyReleased(e -> {
-            switch (e.getCode()) {
-                case UP   -> forward = 0;
-                case DOWN -> backward = 0;
-                default   -> { return; }
+            KeyCode code = e.getCode();
+
+            switch (code) {
+                case LEFT  -> leftPressed = false;
+                case RIGHT -> rightPressed = false;
+                case UP    -> upPressed = false;
+                case DOWN  -> downPressed = false;
+                default    -> { return; }
             }
-            state.set(steer, forward, backward);
+
+            updateState();
         });
+    }
+
+    private void updateState() {
+        int steer = 512;
+
+        if (leftPressed && !rightPressed) {
+            steer = 0;
+        } else if (rightPressed && !leftPressed) {
+            steer = 1023;
+        }
+
+        int forward = upPressed ? 1 : 0;
+        int backward = downPressed ? 1 : 0;
+
+        state.setKeyboard(steer, forward, backward);
     }
 }
